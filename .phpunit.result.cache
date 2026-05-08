@@ -1,0 +1,1 @@
+{"version":2,"defects":{"RegistroTest::testApiAlumnasIsAccessible":7,"RegistroTest::testRegistroFallaSinCamposObligatorios":7},"times":{"RegistroTest::testApiAlumnasIsAccessible":2.248,"RegistroTest::testRegistroFallaSinCamposObligatorios":2.239}}
