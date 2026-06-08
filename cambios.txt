@@ -1,0 +1,94 @@
+Resumen de modificaciones — Balance Studio (hoy)
+Objetivo general
+Unificar ambas aplicaciones en la base de datos balance_final, permitir que las clientas elijan días según su paquete en el portal, y que los empleados vean esos registros en el panel Flask.
+
+Base de datos (balance_final)
+Ambos proyectos usan balance_final (no balance_studio).
+PHP: balancebarre/config/database.php → DB_NAME = balance_final
+Flask: balanceprincipal/aplicacion/app.py → database: balance_final
+balancebarre/database.sql: script para agregar lo que falte (clases_restantes, reservaciones, asistencia_coaches) sin crear otra base.
+Flask crea automáticamente la tabla asistencia_coaches al arrancar si no existe.
+Tablas principales:
+
+Tabla	Uso
+alumnas
+Clientas y empleados (con clases_restantes)
+paquetes
+Planes de clases
+coaches
+Instructores
+horarios
+Plantilla semanal (día, hora, coach)
+reservaciones
+Alumna + clase + fecha concreta
+asistencia_coaches
+Entrada al trabajo de coaches
+Portal clientes — balancebarre
+Archivo	Cambio
+registro.php
+Flujo en 3 pasos: plan → elegir días → datos personales; tarjetas de clases; modo manual o automático
+assets/js/clases-registro.js
+Lógica de selección de clases, auto-asignación y validación antes de enviar
+assets/js/app.js
+Envío con reservaciones; integración con ClasesRegistro; HorariosModule no interfiere en registro
+api/alumnas.php
+Registro con paquete, clases_restantes, reservaciones y auto_asignar
+api/reservaciones.php
+Consulta y auto-asignación de horarios
+config/reservaciones_helper.php
+Lógica compartida de reservaciones
+config/fechas.php
+Cálculo de próxima fecha por día de la semana
+horarios.php
+Solo consulta de horario (sin registro)
+index.php
+Enlaces “Elegir plan” → registro.php?paquete=X
+Flujo previsto para la clienta: elegir plan → elegir clases (manual o automático) → datos → estatus Pendiente → reservaciones en BD.
+
+Pendiente conocido: el paso “Elige tus días” no se muestra bien en tu entorno; quedó así por tu indicación.
+
+Panel empleados — balanceprincipal
+| **Archivo** | **Cambio** |
+| --- | --- |
+| `aplicacion/app.py` | Migrado de `flask_mysqldb` a **PyMySQL**; `ensure_schema()`; rutas actualizadas |
+| `templates/index.html` | Lista todas las alumnas; columna **días/horarios elegidos**; badge **Web**; botón **Activar** para pendientes |
+| `templates/agenda.html` | Vista por **coach**; alumnas inscritas con fecha, paquete y teléfono |
+| `templates/recepcion.html` | Rediseñada para **coaches** (no alumnas): entrada, clases, estadísticas semanales |
+| `requirements.txt` | `flask`, `pymysql` |
+| `INICIO.md` | URLs y cómo iniciar el panel |
+
+Recepción (coaches):
+Selección de coach
+Registro de entrada al trabajo
+Stats por semana: clases/semana, cumplidas, restantes
+Lista de horarios y alumnas inscritas
+Historial de entradas
+
+Agenda:
+Muestra registros del portal web por coach y horario
+Aviso de alumnas pendientes por activar
+
+URLs de uso
+| **App** | **URL** |
+| --- | --- |
+| Clientes — Inicio | http://localhost/balancebarre/index.php |
+| Clientes — Clases | http://localhost/balancebarre/registro.php |
+| Clientes — Horarios | http://localhost/balancebarre/horarios.php |
+| Empleados — Admin | http://127.0.0.1:5000/ |
+| Empleados — Agenda | http://127.0.0.1:5000/agenda |
+| Empleados — Recepción coaches | http://127.0.0.1:5000/recepcion |
+
+Archivos nuevos creados
+balancebarre/config/fechas.php
+balancebarre/config/reservaciones_helper.php
+balancebarre/api/reservaciones.php
+balancebarre/assets/js/clases-registro.js
+balanceprincipal/requirements.txt
+balanceprincipal/INICIO.md
+Lo que no se hizo (por diseño)
+No se unificaron las dos apps en una sola página
+No se cambió el diseño visual general (salvo lo mínimo en agenda/recepción/admin)
+No se hizo commit/push a Git (salvo que lo pidieras)
+Con esto queda documentado el trabajo de hoy. Si más adelante quieres retomar el selector de días en registro.php, se puede depurar con calma (API, caché del navegador, rutas de api/*.php).
+
+

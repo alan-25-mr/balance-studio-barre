@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Studio — Recepción Coaches</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #9caf88;
+            --primary-light: #eef2eb;
+            --dark: #121212;
+            --gray-100: #f7f9f6;
+            --gray-200: #eef2ed;
+            --gray-300: #dce3db;
+            --gray-600: #626b5f;
+            --white: #fff;
+            --radius-sm: 8px;
+            --radius-lg: 24px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background: var(--gray-100); color: var(--dark); padding-bottom: 40px; }
+        .main-header {
+            background: rgba(255,255,255,0.9);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; text-decoration: none; color: var(--dark); }
+        .logo span { color: var(--primary); font-style: italic; }
+        .main-nav { display: flex; gap: 24px; }
+        .nav-link { text-decoration: none; color: var(--gray-600); font-weight: 500; }
+        .nav-link.active { color: var(--dark); border-bottom: 2px solid var(--primary); }
+        .app-container { max-width: 900px; margin: 32px auto; padding: 0 24px; }
+        .page-title { font-family: 'Cormorant Garamond', serif; font-size: 2.4rem; margin-bottom: 8px; }
+        .card {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+        .card-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; margin-bottom: 20px; }
+        .form-select, .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        .form-select { border: 1px solid var(--gray-300); margin-bottom: 16px; background: var(--gray-100); }
+        .btn-primary {
+            background: var(--dark);
+            color: var(--white);
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+        .btn-primary:hover { background: var(--primary); }
+        .btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat { background: var(--primary-light); padding: 20px; border-radius: var(--radius-sm); text-align: center; }
+        .stat-val { font-size: 2rem; font-weight: 600; color: #81946e; }
+        .stat-lbl { font-size: 0.75rem; text-transform: uppercase; color: var(--gray-600); }
+        .horario-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+        .message-box { margin-top: 20px; padding: 16px; border-radius: var(--radius-sm); font-weight: 500; }
+        .message-exito { background: #e6f7ed; color: #1f874c; }
+        .message-alerta { background: #fcebeb; color: #cd2c2c; }
+        .historial-item { font-size: 0.85rem; padding: 8px 0; border-bottom: 1px solid var(--gray-200); }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <a href="/" class="logo">Balance <span>Studio</span></a>
+        <nav class="main-nav">
+            <a href="/" class="nav-link">Administración</a>
+            <a href="/agenda" class="nav-link">Agenda</a>
+            <a href="/recepcion" class="nav-link active">Recepción</a>
+            <a href="/logout" class="nav-link" style="color: #cd2c2c;">Cerrar Sesión</a>
+        </nav>
+    </header>
+
+    <main class="app-container">
+        <h1 class="page-title">Recepción — Coaches</h1>
+        <p style="color:var(--gray-600);margin-bottom:24px;">Registro de entrada al trabajo y consulta de tus clases</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+            <div class="message-box message-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <h2 class="card-title">1. Selecciona tu perfil</h2>
+            <form method="GET" action="/recepcion">
+                <select name="coach_id" class="form-select" onchange="this.form.submit()" required>
+                    <option value="">— Elegir coach —</option>
+                    {% for c in coaches %}
+                    <option value="{{ c[0] }}" {% if coach_id == c[0] %}selected{% endif %}>{{ c[1] }} {{ c[2] }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        {% if coach_sel %}
+        <p style="font-size:0.85rem;color:var(--gray-600);margin-bottom:12px;">
+            Semana del {{ inicio_semana }} al {{ fin_semana }}
+        </p>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-val">{{ clases_por_semana }}</div>
+                <div class="stat-lbl">Clases / semana</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val">{{ asistencias_semana }}</div>
+                <div class="stat-lbl">Cumplidas esta semana</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val">{{ clases_restantes }}</div>
+                <div class="stat-lbl">Restantes esta semana</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">2. Registrar entrada — {{ coach_sel[1] }} {{ coach_sel[2] }}</h2>
+            <p style="font-size:0.9rem;color:var(--gray-600);margin-bottom:16px;">Fecha: {{ hoy }}</p>
+            {% if entro_hoy %}
+            <p style="color:#1f874c;font-weight:600;">✓ Ya registraste tu entrada hoy.</p>
+            {% else %}
+            <form method="POST" action="/recepcion/entrada">
+                <input type="hidden" name="coach_id" value="{{ coach_id }}">
+                <button type="submit" class="btn btn-primary">Registrar que llegué a trabajar</button>
+            </form>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">3. Mis clases y alumnas inscritas</h2>
+            {% if horarios_coach|length == 0 %}
+            <p style="color:var(--gray-600);">No tienes horarios asignados.</p>
+            {% else %}
+            {% for h in horarios_coach %}
+            <div class="horario-item">
+                <span><strong>{{ h[4] }}</strong> — {{ h[1] }} {{ h[2]|string|truncate(5, True, '') }}-{{ h[3]|string|truncate(5, True, '') }}</span>
+                <span>{{ h[5] }} alumna(s)</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">4. Historial de entradas</h2>
+            {% if historial|length == 0 %}
+            <p style="color:#bbb;">Sin registros aún.</p>
+            {% else %}
+            {% for fecha, hora in historial %}
+            <div class="historial-item">{{ fecha }} — entrada {{ hora|string|truncate(5, True, '') }}</div>
+            {% endfor %}
+            {% endif %}
+        </div>
+        {% endif %}
+    </main>
+</body>
+</html>

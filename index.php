@@ -1,3 +1,6 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,7 +11,7 @@
     <link rel="stylesheet" href="assets/css/styles.css">
     <style>
         .hero {
-            background: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('assets/img/hero-bg.png') !important;
+            background: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('assets/images/estudio.jpeg') !important;
             background-size: cover !important;
             background-position: center !important;
             display: flex !important;
@@ -86,6 +89,15 @@
                 <a href="index.php" class="nav-link active">Inicio</a>
                 <a href="registro.php" class="nav-link">Clases</a>
                 <a href="horarios.php" class="nav-link">Horarios</a>
+                <?php if (isset($_SESSION['alumna_id'])): ?>
+                    <a href="registro.php" class="nav-link">Mi Panel</a>
+                    <a href="logout.php" class="nav-link" style="color: #cd2c2c;">Cerrar Sesión</a>
+                <?php elseif (isset($_SESSION['coach_id'])): ?>
+                    <a href="admin_alumnas.php" class="nav-link">Panel Admin</a>
+                    <a href="logout.php" class="nav-link" style="color: #cd2c2c;">Cerrar Sesión</a>
+                <?php else: ?>
+                    <a href="login.php" class="nav-link">Iniciar Sesión</a>
+                <?php endif; ?>
             </nav>
         </div>
     </header>
@@ -94,7 +106,12 @@
     <section class="hero">
         <h1 class="hero-title">Encuentra tu <span>Equilibrio</span></h1>
         <p class="hero-subtitle">Descubre la combinación perfecta de fuerza, flexibilidad y elegancia en Balance Studio.</p>
-        <a href="registro.php" class="btn btn-green btn-lg" style="padding: 16px 40px; font-size: 1rem;">Registrarme a Clases</a>
+        <div style="display: flex; gap: 20px; margin-top: 30px; justify-content: center; flex-wrap: wrap;">
+            <a href="login.php?tab=register" class="btn btn-green btn-lg" style="padding: 16px 40px; font-size: 1rem;">Registrarme a Clases</a>
+            <?php if (!isset($_SESSION['alumna_id']) && !isset($_SESSION['coach_id'])): ?>
+                <a href="login.php" class="btn btn-outline btn-lg" style="padding: 16px 40px; font-size: 1rem;">Iniciar Sesión</a>
+            <?php endif; ?>
+        </div>
     </section>
 
     <main class="app-container">
@@ -141,49 +158,68 @@
             const loadHomePackages = async () => {
                 try {
                     const response = await fetch('api/paquetes.php');
-                    const paquetes = await response.json();
+                    let paquetes = await response.json();
                     const grid = document.getElementById('paquetes-home-grid');
-                    grid.innerHTML = paquetes.map(p => `
-                        <div class="package-card">
-                            <div class="package-name">${p.nombre}</div>
-                            <div class="package-price"><span class="currency">$</span>${parseFloat(p.precio).toLocaleString('es-MX')}</div>
-                            <div class="package-detail">${p.duracion_dias} días</div>
-                            <div class="package-detail text-muted" style="margin-top: 15px;">${p.descripcion || ''}</div>
-                            <div style="margin-top: 20px;">
-                                <a href="registro.php?paquete=${p.id}" class="btn btn-outline btn-sm">Elegir Plan</a>
+                    
+                    if (paquetes.length === 0) {
+                        grid.innerHTML = '<p class="text-muted">No hay planes disponibles en este momento.</p>';
+                        return;
+                    }
+
+                    // Ordenar de menor a mayor cantidad de clases
+                    paquetes.sort((a, b) => parseInt(a.clases_incluidas) - parseInt(b.clases_incluidas));
+
+                    grid.innerHTML = paquetes.map(p => {
+                        const isPopular = parseInt(p.clases_incluidas) === 12;
+                        return `
+                            <div class="package-card ${isPopular ? 'popular' : ''}">
+                                ${isPopular ? '<div class="popular-badge">Más Popular</div>' : ''}
+                                <div class="package-name">${p.nombre}</div>
+                                <div class="package-price"><span class="currency">$</span>${parseFloat(p.precio).toLocaleString('es-MX')}</div>
+                                <div class="package-detail" style="font-weight: 600; color: var(--black);">${p.clases_incluidas} ${p.clases_incluidas == 1 ? 'Sesión' : 'Sesiones'}</div>
+                                <div class="package-detail">Vigencia: ${p.duracion_dias} días</div>
+                                <div class="package-detail text-muted" style="margin-top: 15px; min-height: 40px;">${p.descripcion || ''}</div>
+                                <div style="margin-top: 25px;">
+                                    <a href="registro.php?paquete=${p.id}" class="btn ${isPopular ? 'btn-green' : 'btn-outline'} btn-sm" style="width: 100%;">Elegir Plan</a>
+                                </div>
                             </div>
-                        </div>
-                    `).join('');
-                } catch (e) { console.error(e); }
+                        `;
+                    }).join('');
+                } catch (e) { 
+                    console.error(e);
+                    document.getElementById('paquetes-home-grid').innerHTML = '<p class="text-danger">Error al cargar los planes.</p>';
+                }
             };
 
             // Cargar coaches para el Home
             const loadHomeCoaches = async () => {
                 try {
-                    const response = await fetch('api/coaches.php');
-                    const coaches = await response.json();
+                    // Coaches reales de la empresa con sus descripciones oficiales
+                    const coaches = [
+                        {
+                            nombre: 'Stephanie',
+                            apellidos: 'Salas Ponce',
+                            especialidad: 'Pilates, Barré & Funcional',
+                            bio: 'Certificada en pilates, barré y funcional, disciplina de fuerza que combina ejercicios específicos y funcionales para desarrollar fuerza, resistencia muscular y control corporal.',
+                            img: 'assets/images/fany.jpg'
+                        },
+                        {
+                            nombre: 'Fatima',
+                            apellidos: 'Sánchez González',
+                            especialidad: 'Barré',
+                            bio: 'Certificada en barré, disciplina diseñada para tonificar, moldear e incrementar masa muscular mientras mejoras tu postura, estabilidad y capacidad física general.',
+                            img: 'assets/images/fati.jpeg'
+                        }
+                    ];
+
                     const grid = document.getElementById('coaches-home-grid');
-                    
-                    // Imágenes de ejemplo para los coaches
-                    const coachImages = [
-                        'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800',
-                        'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=800',
-                        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=800'
-                    ];
-
-                    const bios = [
-                        'Especialista en técnica de Barre y alineación postural. Con más de 5 años guiando a alumnas hacia su mejor versión física y mental.',
-                        'Experta en Pilates Reformer y movimiento funcional. Su enfoque se centra en fortalecer el core y mejorar la flexibilidad profunda.',
-                        'Apasionada del fitness integral y el bienestar. Combina ritmos dinámicos con ejercicios de alta intensidad para un entrenamiento completo.'
-                    ];
-
-                    grid.innerHTML = coaches.map((c, i) => `
+                    grid.innerHTML = coaches.map(c => `
                         <div class="coach-card">
-                            <img src="${coachImages[i % coachImages.length]}" alt="${c.nombre}" class="coach-img">
+                            <img src="${c.img}" alt="${c.nombre}" class="coach-img">
                             <div class="coach-info">
                                 <div class="coach-name">${c.nombre} ${c.apellidos}</div>
-                                <div class="coach-specialty">${c.especialidad || 'Coach de Balance'}</div>
-                                <p class="coach-bio">${bios[i % bios.length]}</p>
+                                <div class="coach-specialty">${c.especialidad}</div>
+                                <p class="coach-bio">${c.bio}</p>
                             </div>
                         </div>
                     `).join('');

@@ -101,10 +101,12 @@ const AlumnasModule = {
 
         if (this.form) {
             this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-            await this.loadPaquetes();
+            if (!document.getElementById('panel-elegir-dias')) {
+                await this.loadPaquetes();
+            }
         }
-        
-        await this.loadAlumnas(); // Para cargar estadísticas
+
+        await this.loadAlumnas();
     },
 
     async loadPaquetes() {
@@ -168,11 +170,30 @@ const AlumnasModule = {
         const formData = new FormData(this.form);
         const data = Object.fromEntries(formData);
 
+        if (document.getElementById('panel-elegir-dias') && typeof ClasesRegistro !== 'undefined') {
+            if (!data.paquete_id) {
+                showToast('Selecciona un plan de clases', 'error');
+                return;
+            }
+            const preparado = ClasesRegistro.validarYPreparar(data);
+            if (!preparado) return;
+            Object.assign(data, preparado);
+        }
+
         try {
             await api('api/alumnas.php', 'POST', data);
-            showToast('¡Registro exitoso! Nos pondremos en contacto contigo pronto.');
+            showToast('¡Clases agendadas exitosamente!');
             this.form.reset();
-            await this.loadAlumnas();
+            if (typeof ClasesRegistro !== 'undefined') {
+                ClasesRegistro.seleccionManual = [];
+                ClasesRegistro.seleccionAuto = [];
+                ClasesRegistro.paqueteSeleccionado = null;
+                if (ClasesRegistro.paqueteSelect) ClasesRegistro.paqueteSelect.value = '';
+                ClasesRegistro.onPaqueteChange();
+            }
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
         } catch (e) { /* handled in api() */ }
     }
 };
@@ -202,18 +223,26 @@ const PaquetesModule = {
 
     renderCards(paquetes) {
         if (!this.grid) return;
-        this.grid.innerHTML = paquetes.map(p => `
-            <div class="package-card">
-                <div class="package-name">${p.nombre}</div>
-                <div class="package-price"><span class="currency">$</span>${parseFloat(p.precio).toLocaleString('es-MX')}</div>
-                <div class="package-detail">${p.clases_incluidas > 0 ? p.clases_incluidas + ' clases' : 'Ilimitadas'}</div>
-                <div class="package-detail">${p.duracion_dias} días</div>
-                <div class="package-detail text-muted">${p.descripcion || ''}</div>
-                <div class="package-actions">
-                    <a href="registro.php?paquete=${p.id}" class="btn btn-outline btn-sm">Elegir Plan</a>
+        
+        // Ordenar de menor a mayor cantidad de clases
+        paquetes.sort((a, b) => parseInt(a.clases_incluidas) - parseInt(b.clases_incluidas));
+
+        this.grid.innerHTML = paquetes.map(p => {
+            const isPopular = parseInt(p.clases_incluidas) === 12;
+            return `
+                <div class="package-card ${isPopular ? 'popular' : ''}">
+                    ${isPopular ? '<div class="popular-badge">Más Popular</div>' : ''}
+                    <div class="package-name">${p.nombre}</div>
+                    <div class="package-price"><span class="currency">$</span>${parseFloat(p.precio).toLocaleString('es-MX')}</div>
+                    <div class="package-detail" style="font-weight: 600; color: var(--black);">${p.clases_incluidas} ${p.clases_incluidas == 1 ? 'sesión' : 'sesiones'}</div>
+                    <div class="package-detail">${p.duracion_dias} días de vigencia</div>
+                    <div class="package-detail text-muted" style="margin-top: 10px; min-height: 35px;">${p.descripcion || ''}</div>
+                    <div class="package-actions" style="margin-top: 20px;">
+                        <a href="registro.php?paquete=${p.id}" class="btn ${isPopular ? 'btn-green' : 'btn-outline'} btn-sm" style="width: 100%;">Elegir Plan</a>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     renderTable(paquetes) {
@@ -230,20 +259,43 @@ const PaquetesModule = {
     }
 };
 
+// ── Fecha: próximo día de la semana (cliente) ──
+function proximaFechaPorDiaSemana(diaSemana, desde = new Date()) {
+    const map = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6 };
+    const target = map[diaSemana];
+    if (!target) return null;
+    const d = new Date(desde);
+    d.setHours(12, 0, 0, 0);
+    const current = d.getDay() === 0 ? 7 : d.getDay();
+    let diff = target - current;
+    if (diff < 0) diff += 7;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+}
+
 // =============================================
 // MÓDULO: HORARIOS / CALENDARIO
 // =============================================
 const HorariosModule = {
     coaches: [],
     horarios: [],
+    paquetes: [],
     filterCoachId: null,
-    timeSlots: ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'],
+    bookingEnabled: false,
+    modoDias: 'manual',
+    paqueteSeleccionado: null,
+    seleccionManual: [],
+    seleccionAuto: [],
+    timeSlots: ['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'],
     dias: ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],
 
     async init() {
+        if (document.getElementById('panel-elegir-dias')) return;
+
         this.grid = document.getElementById('schedule-grid');
         this.form = document.getElementById('formHorario');
         this.filterBar = document.getElementById('coach-filters');
+        this.bookingEnabled = false;
 
         if (!this.grid && !this.filterBar) return;
 
@@ -251,8 +303,158 @@ const HorariosModule = {
             this.form.addEventListener('submit', (e) => this.handleSubmit(e));
         }
 
+        if (this.bookingEnabled) {
+            await this.initBooking();
+        }
+
         await this.loadCoaches();
         await this.loadHorarios();
+    },
+
+    async initBooking() {
+        this.paqueteSelect = document.getElementById('paquete_id');
+        this.hintEl = document.getElementById('booking-hint');
+        this.listEl = document.getElementById('selected-classes-list');
+        this.btnConfirm = document.getElementById('btn-submit-alumna');
+
+        try {
+            this.paquetes = await api('api/paquetes.php');
+            if (this.paqueteSelect) {
+                this.paqueteSelect.innerHTML = '<option value="">Seleccionar plan...</option>';
+                this.paquetes.forEach(p => {
+                    this.paqueteSelect.innerHTML += `<option value="${p.id}">${p.nombre} — ${formatMoney(p.precio)} (${p.clases_incluidas} clases)</option>`;
+                });
+            }
+        } catch (e) { /* silent */ }
+
+        if (this.paqueteSelect) {
+            this.paqueteSelect.addEventListener('change', () => this.onPaqueteChange());
+        }
+
+        document.querySelectorAll('input[name="modo-dias"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                this.modoDias = e.target.value;
+                this.seleccionManual = [];
+                this.seleccionAuto = [];
+                this.onPaqueteChange();
+            });
+        });
+    },
+
+    onPaqueteChange() {
+        const opt = this.paqueteSelect?.selectedOptions[0];
+        const id = this.paqueteSelect?.value;
+        this.paqueteSeleccionado = this.paquetes.find(p => String(p.id) === String(id)) || null;
+        this.seleccionManual = [];
+        this.seleccionAuto = [];
+
+        if (!this.paqueteSeleccionado) {
+            this.updateHint('Selecciona un plan para continuar.');
+            this.renderSelectedList();
+            this.renderCalendar();
+            this.updateConfirmButton();
+            return;
+        }
+
+        const n = this.paqueteSeleccionado.clases_incluidas;
+        if (this.modoDias === 'auto') {
+            this.updateHint(`Asignaremos automáticamente ${n} clase(s) en los próximos días disponibles.`);
+            this.runAutoAssign();
+        } else {
+            this.updateHint(`Haz clic en ${n} clase(s) del calendario para elegir tus días.`);
+            this.renderSelectedList();
+            this.renderCalendar();
+        }
+        this.updateConfirmButton();
+    },
+
+    async runAutoAssign() {
+        if (!this.paqueteSeleccionado) return;
+        this.updateHint('Calculando horarios disponibles...');
+        try {
+            const result = await api('api/reservaciones.php', 'POST', {
+                action: 'auto_asignar',
+                paquete_id: this.paqueteSeleccionado.id
+            });
+            this.seleccionAuto = result.reservaciones || [];
+            this.updateHint(`Listo: ${this.seleccionAuto.length} clase(s) asignadas automáticamente.`);
+            this.renderSelectedList();
+            this.renderCalendar();
+            this.updateConfirmButton();
+        } catch (e) {
+            this.seleccionAuto = [];
+            this.renderSelectedList();
+            this.renderCalendar();
+            this.updateConfirmButton();
+        }
+    },
+
+    updateHint(text) {
+        if (this.hintEl) this.hintEl.textContent = text;
+    },
+
+    getSeleccionActual() {
+        return this.modoDias === 'auto' ? this.seleccionAuto : this.seleccionManual;
+    },
+
+    isHorarioSelected(idClase, fecha) {
+        const sel = this.getSeleccionActual();
+        return sel.some(s => String(s.id_clase) === String(idClase) && s.fecha_clase === fecha);
+    },
+
+    renderSelectedList() {
+        if (!this.listEl) return;
+        const sel = this.getSeleccionActual();
+        if (sel.length === 0) {
+            this.listEl.innerHTML = '';
+            return;
+        }
+        this.listEl.innerHTML = sel.map(s => {
+            const h = this.horarios.find(x => String(x.id) === String(s.id_clase));
+            const tipo = s.tipo_clase || h?.tipo_clase || 'Clase';
+            const dia = s.dia_semana || h?.dia_semana || '';
+            const hora = s.hora_inicio || (h ? h.hora_inicio.substring(0, 5) : '');
+            return `<li><strong>${tipo}</strong> — ${dia} ${hora} · ${s.fecha_clase}</li>`;
+        }).join('');
+    },
+
+    updateConfirmButton() {
+        if (!this.btnConfirm) return;
+        const n = this.paqueteSeleccionado?.clases_incluidas || 0;
+        const sel = this.getSeleccionActual();
+        const ok = this.paqueteSeleccionado && sel.length === n;
+        this.btnConfirm.disabled = !ok;
+    },
+
+    toggleHorario(horario) {
+        if (!this.bookingEnabled || this.modoDias !== 'manual' || !this.paqueteSeleccionado) return;
+
+        const fecha = proximaFechaPorDiaSemana(horario.dia_semana);
+        const key = horario.id + '|' + fecha;
+        const idx = this.seleccionManual.findIndex(s => s.id_clase == horario.id && s.fecha_clase === fecha);
+
+        if (idx >= 0) {
+            this.seleccionManual.splice(idx, 1);
+        } else {
+            const max = this.paqueteSeleccionado.clases_incluidas;
+            if (this.seleccionManual.length >= max) {
+                showToast(`Tu plan incluye ${max} clase(s). Quita una selección para cambiar.`, 'info');
+                return;
+            }
+            this.seleccionManual.push({
+                id_clase: horario.id,
+                fecha_clase: fecha,
+                dia_semana: horario.dia_semana,
+                hora_inicio: horario.hora_inicio.substring(0, 5),
+                tipo_clase: horario.tipo_clase
+            });
+        }
+
+        const n = this.paqueteSeleccionado.clases_incluidas;
+        this.updateHint(`Seleccionadas ${this.seleccionManual.length} de ${n} clase(s).`);
+        this.renderSelectedList();
+        this.renderCalendar();
+        this.updateConfirmButton();
     },
 
     async loadCoaches() {
@@ -326,10 +528,23 @@ const HorariosModule = {
                 classes.forEach(c => {
                     const coachIdx = this.coaches.findIndex(co => co.id == c.coach_id);
                     const colorClass = colors[coachIdx % colors.length] || '';
+                    const fecha = proximaFechaPorDiaSemana(c.dia_semana);
+                    const selected = this.bookingEnabled && this.isHorarioSelected(c.id, fecha);
+                    const autoPrev = this.bookingEnabled && this.modoDias === 'auto' && selected;
+                    const selectable = this.bookingEnabled && this.modoDias === 'manual' && this.paqueteSeleccionado;
+                    const extraClass = [
+                        selectable ? 'selectable' : '',
+                        selected ? 'selected' : '',
+                        autoPrev ? 'auto-preview' : ''
+                    ].join(' ').trim();
+                    const click = selectable
+                        ? `onclick="HorariosModule.toggleHorario(HorariosModule.horarios.find(h => h.id == ${c.id}))"`
+                        : '';
                     html += `
-                        <div class="schedule-class ${colorClass}" onclick="HorariosModule.editHorario(${c.id})">
+                        <div class="schedule-class ${colorClass} ${extraClass}" ${click}>
                             ${c.tipo_clase}
                             <div class="class-coach">${c.coach_nombre || ''}</div>
+                            ${this.bookingEnabled && fecha ? `<div class="class-coach" style="font-size:0.7rem;margin-top:4px;">Próx: ${fecha}</div>` : ''}
                         </div>`;
                 });
                 html += '</div>';
@@ -340,8 +555,7 @@ const HorariosModule = {
     },
 
     editHorario(id) {
-        // En la vista de cliente no se edita, pero mantenemos la firma para evitar errores
-        console.log("Consulta de clase ID:", id);
+        console.log('Consulta de clase ID:', id);
     }
 };
 

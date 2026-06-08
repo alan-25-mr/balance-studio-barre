@@ -4,7 +4,13 @@
  * CRUD: GET, POST, PUT, DELETE
  */
 
+session_start();
+
 require_once __DIR__ . '/../config/database.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET' && !isset($_SESSION['coach_id'])) {
+    jsonResponse(['error' => 'Acceso denegado.'], 403);
+}
 
 header('Content-Type: application/json; charset=utf-8');
 

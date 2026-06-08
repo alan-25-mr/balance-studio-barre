@@ -1,11 +1,11 @@
 <?php
 /**
  * Balance Studio - Configuración de Base de Datos
- * Conexión PDO a MySQL/MariaDB (Laragon)
+ * Base existente: balance_final (compartida con panel empleados)
  */
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'balance_studio');
+define('DB_NAME', 'balance_final');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');

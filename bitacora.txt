@@ -1,0 +1,280 @@
+========================================================================
+                      BITÁCORA DE MODIFICACIONES — BALANCE STUDIO
+========================================================================
+
+------------------------------------------------------------------------
+Versión 1.5 — Cambios Consolidados Anteriores
+------------------------------------------------------------------------
+1. Base de Datos Unificada:
+   - Ambas aplicaciones (PHP y Python Flask) se configuraron para utilizar la base
+     de datos 'balance_final'.
+2. Aplicación Flask (Admin/Empleados):
+   - Migración de flask_mysqldb a PyMySQL en app.py.
+   - Implementación de ensure_schema() para autogeneración de tablas.
+   - Rediseño de recepción de coaches (asistencias y stats semanales).
+3. Portal Web (PHP Clientes):
+   - Registro de 3 pasos (Plan -> Elegir días -> Datos personales).
+   - Helper de fechas próximas por día de la semana.
+
+------------------------------------------------------------------------
+Versión 2.0 — Unificación y Módulo de Autenticación Premium
+------------------------------------------------------------------------
+
+CAMBIO 1: Base de Datos ('balance_final')
+   - Agregadas las columnas 'email' y 'password' en las tablas 'alumnas' y 'coaches'.
+   - Contraseñas almacenadas en hash SHA-256.
+   - Migración de autenticación de email → teléfono (columna 'telefono' como identificador único).
+   - Inicialización de credenciales por defecto para coaches:
+     * Stephanie: Teléfono 1111111111 / Contraseña: steph123
+     * Fatima:    Teléfono 2222222222 / Contraseña: fati123
+   - Tabla 'reservaciones' creada para reservas de clases por alumna.
+   - Tabla 'asistencia_coaches' creada para registro de asistencia de coaches.
+
+CAMBIO 2: Página Principal ('index.php')
+   - Agregada la foto de la coach Stephanie usando imagen local 'assets/images/fany.jpg'.
+   - Agregada la foto de la coach Fatima usando imagen local 'assets/images/fati.jpeg'.
+   - Sección de coaches con tarjetas (nombre, especialidad, bio, foto).
+   - Botón "Iniciar Sesión" agregado en la barra de navegación (header).
+   - Botón "Iniciar Sesión" agregado en el hero section junto al de "Registrarme".
+   - Sección de planes cargados dinámicamente desde la API.
+
+CAMBIO 3: Login Premium ('login.php') [NUEVO]
+   - Diseño split 50/50:
+     * Mitad izquierda: Imagen de fondo del studio (fany.jpg) + slogan glassmorphism.
+     * Mitad derecha: Formulario con pestañas (Tabs) para Ingresar / Registrarse.
+   - Autenticación por TELÉFONO (no email) + contraseña.
+   - Registro de alumnas con: nombre, apellidos, teléfono, fecha de nacimiento, contraseña, lesión (opcional).
+   - Validación de teléfono duplicado (busca en alumnas Y coaches).
+   - Redirección automática según el rol:
+     * Alumnas → Panel de clases (registro.php).
+     * Coaches → Redirección a Flask (puerto 5000) con token seguro temporal SHA-256.
+
+CAMBIO 4: Panel de Alumna ('registro.php') [MODIFICADO]
+   - Protegido por sesión. Si no hay alumna logueada, redirige a login.php.
+   - Quitado el formulario redundante de datos personales.
+   - Quitado el contador público de alumnas registradas.
+   - Agregado resumen de cuenta: nombre, teléfono, plan contratado, clases restantes, vigencia.
+   - Listado de clases agendadas con tipo, coach, día, hora y fecha.
+   - Filtro por coach (Stephanie / Fatima / Todos) para elegir clases.
+   - Selector de modo: manual (elegir días uno por uno) o automático (asignación rápida).
+   - Botón de "Cerrar Sesión" en la navegación.
+
+CAMBIO 5: Selector de Clases ('clases-registro.js') [MODIFICADO]
+   - Filtro por coach integrado al selector de clases.
+   - Auto-asignación de clases respeta el filtro de coach seleccionado.
+   - Tarjetas de clase con info de coach, día, hora y fecha próxima.
+   - Recarga del panel tras agendar clases exitosamente.
+
+CAMBIO 6: API de Reservaciones ('api/reservaciones.php') [NUEVO]
+   - Endpoint para auto-asignación de clases con soporte de filtro por coach.
+   - Helpers en 'config/reservaciones_helper.php' y 'config/fechas.php'.
+
+CAMBIO 7: Integración Flask ('balanceprincipal/aplicacion/app.py') [MODIFICADO]
+   - Ruta '/login_external' acepta parámetro 'telefono' (antes 'email').
+   - Validación de token SHA-256 con secreto compartido.
+   - Ruta '/logout' para limpiar sesión.
+   - Hook check_auth() protege endpoints administrativos.
+   - Botones de "Cerrar Sesión" en templates de Flask.
+
+------------------------------------------------------------------------
+Sincronización de Archivos — Scratch → Laragon
+------------------------------------------------------------------------
+Fecha: 2026-06-01
+
+Archivos sincronizados a C:\laragon\www\balancebarre:
+   - index.php (página principal con botón login y coaches)
+   - login.php (sistema de autenticación premium)
+   - registro.php (panel de alumna protegido por sesión)
+   - horarios.php
+   - paquetes.php
+   - database.sql
+   - api/alumnas.php
+   - api/coaches.php
+   - api/horarios.php
+   - api/paquetes.php
+   - api/reservaciones.php (NUEVO en Laragon)
+   - config/database.php
+   - config/fechas.php (NUEVO en Laragon)
+   - config/reservaciones_helper.php (NUEVO en Laragon)
+   - assets/css/styles.css
+   - assets/js/app.js
+   - assets/js/clases-registro.js
+   - assets/images/fany.jpg (NUEVO en Laragon)
+   - assets/images/fati.jpeg
+
+========================================================================
+Versión 2.1 — Inicio de Sesión de Coaches por Nombre
+========================================================================
+Fecha: 2026-06-01
+Hora: 01:45 AM
+
+MODIFICACIÓN: Acceso de Coaches por Nombre o Teléfono
+   - Archivo modificado: login.php
+   - Qué se hizo: 
+     * Se modificó la consulta SQL de autenticación para coaches, permitiéndoles ingresar utilizando su Nombre (Ej. 'Stephanie' o 'Fatima') o su Teléfono, junto con su Contraseña.
+     * Se actualizó el formulario de inicio de sesión en login.php: se cambió el campo de entrada a tipo "text" (quitando restricciones telefónicas de navegador) y se actualizó la etiqueta a "Teléfono (Alumnas) / Nombre (Coaches)" y el marcador de posición a "Ingresa tu teléfono o tu nombre de coach" para mejorar la experiencia de usuario.
+     * Al autenticar con éxito, login.php obtiene el teléfono real asociado al coach en la base de datos para generar de forma segura y transparente el token SHA-256 requerido por la app de Flask, garantizando compatibilidad total sin alterar el backend de Python.
+     * Corrección de Hashes de Contraseña: Se detectó que las contraseñas guardadas en la base de datos para las coaches tenían hashes SHA-256 incorrectos. Se actualizaron los registros de 'coaches' en MySQL, el archivo 'database.sql' y 'update_db_phones.py' con los hashes correctos correspondientes a 'steph123' y 'fati123' (permitiendo el acceso perfecto con 'Stephanie'/'steph123' y 'Fatima'/'fati123').
+
+========================================================================
+Versión 2.2 — Privacidad en Recepción y Confirmación de Base de Datos Única
+========================================================================
+Fecha: 2026-06-01
+Hora: 02:00 AM
+
+MODIFICACIÓN 1: Privacidad y Roles de Coaches en Recepción
+   - Archivo modificado: balanceprincipal/aplicacion/app.py
+   - Qué se hizo:
+     * Se limitó el acceso en el apartado de "Recepción" del panel Flask para que cada coach solo pueda visualizar y registrar asistencia de sí misma al iniciar sesión.
+     * Se configuró un rol de "Jefa" (administradora principal) exclusivo para Stephanie (ID 1), permitiéndole a ella ser la única que conserva la capacidad de seleccionar y ver las estadísticas y asistencias de ambas coaches.
+     * Si una coach regular (Ej. Fatima) intenta acceder a los datos de otra modificando el parámetro de la URL, el sistema intercepta la petición y la redirige automáticamente a su propio perfil.
+
+MODIFICACIÓN 2: Confirmación de Base de Datos Unificada
+   - Qué se hizo:
+     * Se corroboró y documentó que ambos portales (PHP para Clientes y Flask para Empleados/Coaches) acceden en tiempo real a la misma base de datos 'balance_final'.
+     * Cualquier alumna que se registre a través del portal de clientes (login.php / registro.php) se ve reflejada de forma inmediata en el panel de control de las coaches en Flask, sin retraso ni necesidad de sincronización manual de bases de datos.
+
+========================================================================
+Versión 3.0 — Unificación en PHP, Correcciones y Seguridad Completa
+========================================================================
+Fecha: 2026-06-06
+Hora: 11:32 PM
+
+1. Migración de Flask a PHP:
+   - Se reescribió por completo la lógica del panel administrativo de empleados de Python Flask a PHP nativo, eliminando la necesidad de encender la aplicación desde terminal.
+   - Nuevos archivos creados:
+     * admin_alumnas.php (Gestión de alumnas, registro y activación)
+     * admin_agenda.php (Agenda semanal detallada por coach e inscripciones manuales)
+     * admin_recepcion.php (Check-in de asistencia diaria de coaches y estadísticas semanales)
+   - Esto simplifica la infraestructura: todo corre en Laragon (puerto 80) y es compatible con hosting PHP convencional o Cloudflare Tunnels sin redirecciones de puertos externos.
+
+2. Imagen Real del Estudio:
+   - Se reemplazó la imagen genérica de fondo en el Hero section de index.php por 'assets/images/estudio.jpeg', manteniendo el filtro linear-gradient original para legibilidad.
+
+3. Re-estructuración y Corrección de Horarios:
+   - Se vació e inicializó la tabla 'horarios' con las clases semanales reales:
+     * Stephanie: Lunes a viernes de 6:00 y 7:00 am, 5:00, 6:00, 7:00 y 8:00 pm.
+     * Fatima: Lunes, miércoles y viernes a las 8:00 am.
+   - Modificado assets/js/app.js para añadir la franja horaria '06:00' al calendario del cliente.
+
+4. Módulo de Planes y Paquetes:
+   - Se cambió el distintivo de "Más Popular" al paquete de 12 clases (antes era el de 8).
+   - Se ordenaron los planes de menor a mayor en base a sus clases incluidas, eliminando la lógica de código que insertaba manualmente el plan de 20 clases en el medio.
+
+5. Mejoras de Interfaz (UI/UX) y Botones:
+   - Se separaron los botones del Hero section de index.php usando Flexbox con espacio (gap) responsivo.
+   - El botón "Registrarme a Clases" ahora redirige a login.php?tab=register.
+   - Implementado JS en login.php para cambiar automáticamente de pestaña al detectar '?tab=register' o el hash '#register'.
+
+6. Corrección en Inicio de Sesión de Coaches y Navegación:
+   - Al ingresar credenciales correctas en login.php, los coaches ya no son redirigidos al puerto 5000 local, sino directamente a admin_alumnas.php dentro del mismo sitio PHP.
+   - Implementado el patrón PRG (Post-Redirect-Get) guardando errores en sesión para evitar que el navegador muestre "Confirmar reenvío de formulario" al ir hacia atrás o recargar la página.
+
+7. Diseño de Coaches Unificado:
+   - Las tres nuevas páginas de administración PHP heredan el sistema de diseño completo de clientes (tipografías Inter y Cormorant Garamond, colores sage green, marrón, sombras tenues y bordes planos).
+
+8. Seguridad y Validación Visual:
+   - Las páginas de administración PHP están protegidas mediante $_SESSION['coach_id'], bloqueando cualquier acceso no autorizado por cambio de URL.
+   - Se implementó validación en cliente (JS) para todos los formularios. Si un usuario deja campos requeridos vacíos o escribe un formato de teléfono incorrecto (distinto a 10 dígitos), el submit se detiene y las casillas se tornan en color rojo de advertencia.
+
+9. Sincronización Automática:
+   - Todos los archivos nuevos y modificados de scratch fueron sincronizados a la carpeta de producción en C:\laragon\www\balancebarre.
+
+========================================================================
+Versión 3.1 — Horario Visual, Auto-asignación Secuencial y Panel Persistente
+========================================================================
+Fecha: 2026-06-07
+Hora: 08:40 PM
+
+CAMBIO 1: Selector de Clases con Formato de Horario Semanal ('registro.php')
+   - Archivo modificado: registro.php, assets/js/clases-registro.js
+   - Qué se hizo:
+     * Se reemplazó el selector de clases de tarjetas individuales (cards) por una grilla
+       de horario semanal idéntica a la de horarios.php (schedule-grid).
+     * Las clases se muestran en una tabla visual de Lunes a Sábado con las horas en el eje
+       vertical, exactamente como el calendario público de horarios.php.
+     * En modo manual, el usuario toca directamente las celdas del horario para seleccionar
+       sus clases. Las celdas seleccionadas se marcan con un borde verde y el texto "✓ Seleccionada".
+     * Se agregaron estilos CSS para celdas seleccionables (.selectable), seleccionadas (.selected)
+       y deshabilitadas (.disabled-class) dentro del schedule-grid.
+
+CAMBIO 2: Filtro de Hora de Clase ('registro.php')
+   - Archivo modificado: registro.php
+   - Qué se hizo:
+     * Se añadió un dropdown "Hora de Clase" junto al filtro de coach existente en la
+       sección de "Filtros de Horario (Opcional)".
+     * Las opciones del dropdown se populan dinámicamente desde las horas únicas disponibles
+       en los horarios del sistema.
+     * Al seleccionar una hora, la grilla de horario se filtra para mostrar solo las clases
+       de esa franja horaria. El filtro funciona tanto en modo manual como automático.
+
+CAMBIO 3: Lógica de Auto-asignación Secuencial Lun→Vie ('reservaciones_helper.php')
+   - Archivo modificado: config/reservaciones_helper.php
+   - Qué se hizo:
+     * Se reescribió la función autoAsignarHorarios() para asignar clases de forma
+       estrictamente secuencial: una clase por día, de Lunes a Viernes, hasta cubrir
+       el número de clases del paquete.
+     * El filtro de hora se aplica directamente en la consulta SQL (antes se filtraba en PHP),
+       mejorando la eficiencia.
+     * Si el paquete requiere más de 5 clases, el sistema continúa en la siguiente semana
+       con el mismo patrón Lun→Vie.
+     * Se muestra un mensaje de error claro si no hay suficientes cupos con la hora seleccionada.
+
+CAMBIO 4: Navegación Persistente "Mi Panel" ('registro.php')
+   - Archivo modificado: registro.php
+   - Qué se hizo:
+     * Se actualizó la barra de navegación de registro.php para incluir los mismos enlaces
+       condicionales por sesión que tienen index.php y horarios.php.
+     * Ahora cuando una alumna está logueada, siempre aparece el enlace "Mi Panel" en la
+       navegación sin importar en qué módulo esté. Antes solo se mostraba "Clases" y
+       "Cerrar Sesión" de forma fija sin respetar el estado de sesión.
+
+Sincronización de archivos a Laragon (C:\laragon\www\balancebarre):
+   - registro.php
+   - assets/js/clases-registro.js
+   - config/reservaciones_helper.php
+
+========================================================================
+Versión 3.2 — Rebranding de Coaches, Inicio de Sesión por ID y Roles de Admin
+========================================================================
+Fecha: 2026-06-08
+Hora: 02:15 AM
+
+CAMBIO 1: Rebranding de Coaches
+   - Archivos modificados: base de datos (balance_final), index.php
+   - Qué se hizo:
+     * Se actualizaron los nombres de las coaches en la base de datos a "Coach Fany" (anteriormente Stéphanie) y "Coach Fati" (anteriormente Fátima).
+     * Se modificó index.php para mostrar dinámicamente "Coach Fany" y "Coach Fati" en las tarjetas de presentación de coaches.
+     * En horarios.php y registro.php, los nombres ahora se cargan dinámicamente de forma automática al consumir la base de datos modificada.
+
+CAMBIO 2: Sistema de Acceso por ID, Nombre o Teléfono
+   - Archivos modificados: base de datos, login.php, admin_alumnas.php, admin_agenda.php
+   - Qué se hizo:
+     * Se agregaron las columnas coach_id y alumna_id a la base de datos y se poblaron con IDs secuenciales 10X para coaches (101, 102) y 20X para alumnas (201, 202, etc.).
+     * Al registrarse un nuevo cliente, se autogenera su ID secuencial (20X).
+     * Se actualizó login.php para permitir el ingreso usando ID, Nombre o Teléfono para clientes y coaches.
+     * Se corrigió un bug de sesión donde se guardaban IDs públicos en vez de llaves primarias en la variable de sesión, impidiendo el correcto funcionamiento del portal.
+
+CAMBIO 3: Gestión de Permisos por Rol en Administración (Fany vs Fati)
+   - Archivos modificados: admin_alumnas.php, admin_agenda.php
+   - Qué se hizo:
+     * Coach Fany (ID 101/1) mantiene permisos de Jefa/Admin completa: visualizar, agregar, editar y eliminar permanentemente alumnas y cancelaciones de reservas.
+     * Coach Fati (ID 102/2) cuenta con perfil restringido: solo puede agregar alumnas manualmente y visualizar alumnas o reservas de sus propias clases asignadas. Los botones de editar/eliminar/cancelar están ocultos y protegidos a nivel servidor.
+
+CAMBIO 4: Módulo de Recepción y Pase de Lista por ID
+   - Archivos modificados: admin_recepcion.php
+   - Qué se hizo:
+     * Se agregó una sección de "Pase de Lista" donde se ingresa el ID, Nombre o Teléfono de la alumna para marcar su reservación de hoy como "Asistida".
+     * Se añadió una lista en la parte inferior de la pantalla que muestra todas las alumnas que deben asistir el día de hoy, con un badge que cambia a color verde ("✓ Asistió") cuando han registrado su entrada y se quitan de la lista de clases pendientes.
+
+CAMBIO 5: Limitación a Selección Manual, Remoción de "Web" y Mejoras de Seguridad
+   - Archivos modificados: registro.php, assets/js/clases-registro.js, api/reservaciones.php, api/alumnas.php, api/coaches.php, api/paquetes.php, api/horarios.php
+   - Qué se hizo:
+     * Se eliminó el modo de auto-asignación por completo de la UI del cliente (`registro.php` y `clases-registro.js`) y del backend API, dejando únicamente la selección manual paso a paso de clases.
+     * Se eliminó el modal que indicaba "WEB" tras el registro. Ahora el registro exitoso devuelve al cliente a login con una alerta de éxito que indica su ID autogenerado (ej. 201).
+     * Se añadió seguridad y bloqueo en los APIs (coaches, paquetes, horarios, reservaciones y alumnas) requiriendo inicio de sesión válido y control de método HTTP por rol para que no puedan copiar y pegar URLs para acceder o modificar datos.
+     * Creado un archivo detallado `manual_instalacion.md` para replicar el sistema en otro portátil.
+
+========================================================================
+Fin de Bitácora. Sistema actualizado a versión 3.2.
+========================================================================

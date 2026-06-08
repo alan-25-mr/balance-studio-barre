@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Studio — Panel de Administración</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #9caf88;
+            --primary-dark: #81946e;
+            --primary-light: #eef2eb;
+            --dark: #121212;
+            --dark-light: #1e1e1e;
+            --gray-100: #f7f9f6;
+            --gray-200: #eef2ed;
+            --gray-300: #dce3db;
+            --gray-600: #626b5f;
+            --white: #ffffff;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 30px rgba(156, 175, 136, 0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--gray-100);
+            color: var(--dark);
+            line-height: 1.6;
+            padding-bottom: 60px;
+        }
+
+        /* ── Header Premium ── */
+        .main-header {
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--gray-200);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--dark);
+            letter-spacing: 1px;
+        }
+
+        .logo span {
+            color: var(--primary);
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            position: relative;
+            padding: 8px 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--dark);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* ── Container principal ── */
+        .app-container {
+            max-width: 1300px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+
+        /* ── Hero Section ── */
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.8rem;
+            font-weight: 400;
+            color: var(--dark);
+            line-height: 1.2;
+        }
+
+        .page-subtitle {
+            color: var(--gray-600);
+            font-size: 1.05rem;
+            margin-top: 8px;
+            font-weight: 300;
+        }
+
+        /* ── Dashboard Grid ── */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 992px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Cards Estilizadas ── */
+        .card {
+            background-color: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 36px;
+            box-shadow: var(--shadow-subtle);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--dark);
+            border-bottom: 1px solid var(--gray-200);
+            padding-bottom: 12px;
+        }
+
+        /* ── Formulario Premium ── */
+        .grid-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 576px) {
+            .grid-form {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.95rem;
+            background-color: var(--gray-100);
+            color: var(--dark);
+            transition: var(--transition);
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: var(--white);
+            box-shadow: 0 0 0 4px rgba(156, 175, 136, 0.15);
+        }
+
+        .form-textarea {
+            resize: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px 32px;
+            background-color: var(--dark);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* ── Seccion Lateral / Estadísticas ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background-color: var(--primary-light);
+            border: 1px solid rgba(156, 175, 136, 0.2);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        /* ── Lista de Alumnas (Tabla Premium) ── */
+        .table-section {
+            margin-top: 40px;
+        }
+
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 380px;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 40px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            background-color: var(--white);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(156, 175, 136, 0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-600);
+            pointer-events: none;
+        }
+
+        .table-wrapper {
+            background-color: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--gray-100);
+            color: var(--dark);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        td {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-200);
+            font-size: 0.95rem;
+            color: var(--dark);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: rgba(156, 175, 136, 0.03);
+        }
+
+        /* ── Badges Estatus ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-active {
+            background-color: #e6f7ed;
+            color: #1f874c;
+        }
+
+        .badge-inactive {
+            background-color: #fcebeb;
+            color: #cd2c2c;
+        }
+
+        .badge-pending {
+            background-color: #fef5e6;
+            color: #d48000;
+        }
+
+        .lesion-text {
+            color: #cd2c2c;
+            font-weight: 500;
+            font-size: 0.85rem;
+            background-color: #fcebeb;
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            max-width: 250px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .text-muted {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Header Premium ── -->
+    <header class="main-header">
+        <a href="/" class="logo">Balance <span>Studio</span></a>
+        <nav class="main-nav">
+            <a href="/" class="nav-link active">Administración</a>
+            <a href="/agenda" class="nav-link">Agenda de Clases</a>
+            <a href="/recepcion" class="nav-link">Recepción</a>
+            <a href="/logout" class="nav-link" style="color: #cd2c2c;">Cerrar Sesión</a>
+        </nav>
+    </header>
+
+    <!-- ── Container principal ── -->
+    <main class="app-container">
+
+        <!-- ── Page Title ── -->
+        <section class="page-header">
+            <h1 class="page-title">Gestión de Alumnas</h1>
+            <p class="page-subtitle">Panel administrativo de empleados para registro, activación e historial del estudio</p>
+        </section>
+
+        <!-- ── Grid Principal ── -->
+        <div class="dashboard-grid">
+            
+            <!-- Card Formulario Registro -->
+            <section class="card">
+                <h2 class="card-title">Registrar Nueva Alumna</h2>
+                
+                <form action="/add" method="POST" id="formRegistro">
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label class="form-label" for="nombre">Nombre(s)</label>
+                            <input type="text" class="form-input" id="nombre" name="nombre" placeholder="Ej. Ana María" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="apellidos">Apellidos</label>
+                            <input type="text" class="form-input" id="apellidos" name="apellidos" placeholder="Ej. Pérez Gómez" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="telefono">Teléfono</label>
+                            <input type="tel" class="form-input" id="telefono" name="telefono" placeholder="10 dígitos" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="fecha_nacimiento">Fecha de Nacimiento</label>
+                            <input type="date" class="form-input" id="fecha_nacimiento" name="fecha_nacimiento">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="paquete_id">Plan / Paquete de clases</label>
+                            <select class="form-select" id="paquete_id" name="paquete_id" onchange="toggleManualOverrides(this)" required>
+                                <option value="" selected disabled>Seleccionar plan...</option>
+                                {% for paquete in paquetes %}
+                                <option value="{{ paquete[0] }}" data-clases="{{ paquete[2] }}" data-precio="{{ paquete[3] }}">
+                                    {{ paquete[1] }} — ${{ "%.2f"|format(paquete[2]) if paquete[2] else paquete[3] }} (${{ paquete[2] }} clases)
+                                </option>
+                                {% endfor %}
+                                <option value="manual">-- Configurar personalizado (Manual) --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="estatus">Estatus inicial</label>
+                            <select class="form-select" id="estatus" name="estatus">
+                                <option value="Activa" selected>Activa</option>
+                                <option value="Inactiva">Inactiva</option>
+                                <option value="Pendiente">Pendiente (Sin pagar)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Campos Opcionales / Manual Overrides (Escondidos por defecto, activados al elegir manual) -->
+                    <div class="grid-form" id="manual-overrides" style="display: none; margin-top: 20px; padding: 20px; background-color: var(--gray-100); border-radius: var(--radius-sm); border: 1px dashed var(--gray-300);">
+                        <div class="form-group">
+                            <label class="form-label" for="clases_override">Clases a cargar</label>
+                            <input type="number" class="form-input" id="clases_override" name="clases_override" placeholder="Ej. 10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="monto_override">Monto cobrado ($)</label>
+                            <input type="number" step="0.01" class="form-input" id="monto_override" name="monto_override" placeholder="Ej. 450.00">
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label" for="vencimiento_override">Fecha de Vencimiento</label>
+                            <input type="date" class="form-input" id="vencimiento_override" name="vencimiento_override">
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width mt-3" style="margin-top: 20px;">
+                        <label class="form-label" for="lesion">Lesiones / Padecimientos médicos</label>
+                        <textarea class="form-textarea" id="lesion" name="lesion" rows="2" placeholder="Escribe si la alumna presenta alguna condición especial para cuidar de ella durante clase..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 24px; width: 100%;">Registrar e inicializar alumna</button>
+                </form>
+            </section>
+
+            <!-- Panel de Información Rápida y Estadísticas -->
+            <section class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h2 class="card-title">Resumen del Estudio</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-activas">0</div>
+                            <div class="stat-label">Activas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-pendientes">0</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background-color: var(--primary-light); padding: 24px; border-radius: var(--radius-md); border: 1px solid rgba(156, 175, 136, 0.2); margin-top: 20px;">
+                    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; margin-bottom: 12px;">Instrucciones rápidas</h3>
+                    <p style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 8px;">1. **Registro:** Al seleccionar un plan, el sistema calcula automáticamente la vigencia (30 días) y carga las clases correspondientes.</p>
+                    <p style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 8px;">2. **Estatus Pendiente:** Representa alumnas que se registraron por sí mismas en la web y aún no pagan. Al activarlas, cárgales su plan correspondiente.</p>
+                    <p style="font-size: 0.85rem; color: var(--gray-600);">3. **Recepción:** Coloca la pantalla de check-in en la entrada para que las alumnas marquen su asistencia solas.</p>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ── Tabla de Listado de Alumnas ── -->
+        <section class="table-section">
+            <div class="table-toolbar">
+                <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 400;">Lista de Alumnas Registradas</h2>
+                
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="search-input" placeholder="Buscar por nombre o teléfono..." onkeyup="filterAlumnas()">
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="alumnas-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre de la Alumna</th>
+                            <th>Teléfono</th>
+                            <th>Plan Contratado</th>
+                            <th>Días / horarios elegidos</th>
+                            <th>Clases Restantes</th>
+                            <th>Monto</th>
+                            <th>Vencimiento</th>
+                            <th>Estatus</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alumna in alumnas %}
+                        <tr>
+                            <td>
+                                <strong>{{ alumna[1] }} {{ alumna[2] }}</strong>
+                                {% if alumna[7] == 'Pendiente' %}
+                                <br><span class="badge badge-pending" style="margin-top:6px;">Web</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ alumna[4] }}</td>
+                            <td><span class="text-muted">{{ alumna[9] if alumna[9] else 'Ninguno' }}</span></td>
+                            <td style="font-size:0.85rem;max-width:280px;">
+                                {% if alumna[11] %}
+                                {{ alumna[11] }}
+                                {% else %}
+                                <span style="color:#bbb;">Sin horarios</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-weight: 600; color: {% if alumna[3] == 0 %}#cd2c2c{% else %}var(--dark){% endif %};">
+                                {{ alumna[3] }} ses.
+                            </td>
+                            <td>${{ "%.2f"|format(alumna[5]) if alumna[5] else '0.00' }}</td>
+                            <td>{{ alumna[6] if alumna[6] else '—' }}</td>
+                            <td>
+                                {% if alumna[7] == 'Activa' %}
+                                <span class="badge badge-active">Activa</span>
+                                {% elif alumna[7] == 'Pendiente' %}
+                                <span class="badge badge-pending">Pendiente</span>
+                                {% else %}
+                                <span class="badge badge-inactive">Inactiva</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if alumna[7] == 'Pendiente' %}
+                                <form action="{{ url_for('activar_alumna', alumna_id=alumna[0]) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-primary" style="padding:8px 14px;font-size:0.75rem;">Activar</button>
+                                </form>
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" style="text-align:center;color:var(--gray-600);padding:40px;">
+                                No hay alumnas registradas aún.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Calcular estadísticas en tiempo real basados en la tabla cargada
+        document.addEventListener('DOMContentLoaded', () => {
+            const table = document.getElementById('alumnas-table');
+            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            let activas = 0;
+            let pendientes = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+                const statusSpan = rows[i].getElementsByClassName('badge')[0];
+                if (statusSpan) {
+                    const text = statusSpan.textContent.trim();
+                    if (text === 'Activa') activas++;
+                    if (text === 'Pendiente') pendientes++;
+                }
+            }
+
+            document.getElementById('stat-activas').textContent = activas;
+            document.getElementById('stat-pendientes').textContent = pendientes;
+        });
+
+        // Alternar campos manuales si se selecciona crear plan manual
+        function toggleManualOverrides(select) {
+            const manualDiv = document.getElementById('manual-overrides');
+            if (select.value === 'manual') {
+                manualDiv.style.display = 'grid';
+                document.getElementById('clases_override').setAttribute('required', 'required');
+                document.getElementById('monto_override').setAttribute('required', 'required');
+                document.getElementById('vencimiento_override').setAttribute('required', 'required');
+            } else {
+                manualDiv.style.display = 'none';
+                document.getElementById('clases_override').removeAttribute('required');
+                document.getElementById('monto_override').removeAttribute('required');
+                document.getElementById('vencimiento_override').removeAttribute('required');
+            }
+        }
+
+        // Filtro de búsqueda rápido en la tabla
+        function filterAlumnas() {
+            const input = document.getElementById('search-input');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('alumnas-table');
+            const tr = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+            for (let i = 0; i < tr.length; i++) {
+                const tdNombre = tr[i].getElementsByTagName('td')[0];
+                const tdTelefono = tr[i].getElementsByTagName('td')[1];
+                
+                if (tdNombre || tdTelefono) {
+                    const nombreText = tdNombre.textContent || tdNombre.innerText;
+                    const telText = tdTelefono.textContent || tdTelefono.innerText;
+                    
+                    if (nombreText.toLowerCase().indexOf(filter) > -1 || telText.toLowerCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

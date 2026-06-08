@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Studio — Agenda de Clases</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #9caf88;
+            --primary-dark: #81946e;
+            --primary-light: #eef2eb;
+            --dark: #121212;
+            --dark-light: #1e1e1e;
+            --gray-100: #f7f9f6;
+            --gray-200: #eef2ed;
+            --gray-300: #dce3db;
+            --gray-600: #626b5f;
+            --white: #ffffff;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 30px rgba(156, 175, 136, 0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--gray-100);
+            color: var(--dark);
+            line-height: 1.6;
+            padding-bottom: 60px;
+        }
+
+        /* ── Header Premium ── */
+        .main-header {
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--gray-200);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--dark);
+            letter-spacing: 1px;
+        }
+
+        .logo span {
+            color: var(--primary);
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            position: relative;
+            padding: 8px 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--dark);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* ── Container principal ── */
+        .app-container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+
+        /* ── Page Header ── */
+        .page-header {
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+        }
+
+        .page-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.8rem;
+            font-weight: 400;
+            color: var(--dark);
+            line-height: 1.2;
+        }
+
+        .page-subtitle {
+            color: var(--gray-600);
+            font-size: 1.05rem;
+            margin-top: 8px;
+            font-weight: 300;
+        }
+
+        /* ── Alert/Flash Messages ── */
+        .alert-container {
+            margin-bottom: 30px;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .alert-exito {
+            background-color: #e6f7ed;
+            color: #1f874c;
+            border: 1px solid rgba(31, 135, 76, 0.15);
+        }
+
+        .alert-alerta {
+            background-color: #fcebeb;
+            color: #cd2c2c;
+            border: 1px solid rgba(205, 44, 44, 0.15);
+        }
+
+        /* ── Grid de la Agenda ── */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .schedule-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .schedule-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+
+        .day-column {
+            background-color: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 24px 20px;
+            min-height: 600px;
+            box-shadow: var(--shadow-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .day-title {
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--gray-600);
+            border-bottom: 1px solid var(--gray-200);
+            padding-bottom: 16px;
+        }
+
+        /* ── Tarjetas de Clase ── */
+        .class-card {
+            background-color: var(--gray-100);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 190px;
+        }
+
+        .class-card:hover {
+            background-color: var(--white);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .class-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .class-time {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .class-type {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+
+        .class-coach {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray-600);
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        /* Cupos y Progreso */
+        .occupancy-container {
+            margin-bottom: 16px;
+        }
+
+        .occupancy-bar {
+            height: 4px;
+            background-color: var(--gray-300);
+            width: 100%;
+            border-radius: 2px;
+            margin-bottom: 6px;
+            overflow: hidden;
+        }
+
+        .occupancy-progress {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease-out;
+        }
+
+        .occupancy-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn-booking {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--dark);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-booking:hover {
+            background-color: var(--primary);
+        }
+
+        .btn-booking:disabled {
+            background-color: var(--gray-300);
+            color: var(--gray-600);
+            cursor: not-allowed;
+        }
+
+        /* ── Modal Premium ── */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(18, 18, 18, 0.4);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            width: 90%;
+            max-width: 460px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-600);
+            background: none;
+            border: none;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--dark);
+        }
+
+        .modal-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+
+        .modal-subtitle {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            margin-bottom: 24px;
+        }
+
+        .form-select-modal {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.95rem;
+            background-color: var(--gray-100);
+            margin-bottom: 24px;
+        }
+
+        .form-select-modal:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: var(--white);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .coach-section {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .coach-section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+
+        .coach-section-sub {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            margin-bottom: 20px;
+        }
+
+        .clase-row {
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 12px;
+            background: var(--gray-100);
+        }
+
+        .inscrita-item {
+            font-size: 0.85rem;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .pendientes-banner {
+            background: #fef5e6;
+            border: 1px solid #f0d9a8;
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Header Premium ── -->
+    <header class="main-header">
+        <a href="/" class="logo">Balance <span>Studio</span></a>
+        <nav class="main-nav">
+            <a href="/" class="nav-link">Administración</a>
+            <a href="/agenda" class="nav-link active">Agenda de Clases</a>
+            <a href="/recepcion" class="nav-link">Recepción</a>
+            <a href="/logout" class="nav-link" style="color: #cd2c2c;">Cerrar Sesión</a>
+        </nav>
+    </header>
+
+    <main class="app-container">
+
+        <!-- ── Page Title ── -->
+        <section class="page-header">
+            <div>
+                <h1 class="page-title">Agenda de Clases</h1>
+                <p class="page-subtitle">Alumnas registradas desde el portal web, por coach y horario</p>
+            </div>
+        </section>
+
+        <!-- ── Flash Messages ── -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="alert-container">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                  <span>{{ message }}</span>
+                  <button style="background:none; border:none; color:inherit; font-size:1.1rem; cursor:pointer;" onclick="this.parentElement.remove()">✕</button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% if pendientes_count > 0 %}
+        <div class="pendientes-banner">
+            <strong>{{ pendientes_count }}</strong> alumna(s) registrada(s) desde el portal web esperando confirmación.
+            Actívalas en <a href="/">Administración</a>.
+        </div>
+        {% endif %}
+
+        {% for coach in coaches_agenda %}
+        <section class="coach-section">
+            <h2 class="coach-section-title">{{ coach.nombre }}</h2>
+            <p class="coach-section-sub">{{ coach.especialidad or 'Coach' }}</p>
+
+            {% if coach.clases|length == 0 %}
+            <p style="color:var(--gray-600);font-style:italic;">Sin horarios asignados.</p>
+            {% else %}
+                {% for clase in coach.clases %}
+                <div class="clase-row">
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                        <div>
+                            <strong>{{ clase.tipo }}</strong>
+                            <span style="color:var(--gray-600);"> — {{ clase.dia }} {{ clase.hora_inicio }}-{{ clase.hora_fin }}</span>
+                        </div>
+                        <span style="font-size:0.8rem;font-weight:600;">{{ clase.ocupados }} / {{ clase.capacidad }} alumnas</span>
+                    </div>
+
+                    {% if clase.inscritas|length > 0 %}
+                    <div style="margin-top:8px;">
+                        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;">Registradas (portal / panel):</div>
+                        {% for ins in clase.inscritas %}
+                        <div class="inscrita-item">
+                            <strong>{{ ins.nombre }}</strong>
+                            · {{ ins.fecha }}
+                            · {{ ins.paquete }}
+                            {% if ins.estatus == 'Pendiente' %}<span class="badge badge-pending" style="font-size:0.65rem;">Pendiente</span>{% endif %}
+                            <span style="color:var(--gray-600);"> · {{ ins.telefono }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="font-size:0.85rem;color:#bbb;margin:0;">Ninguna alumna inscrita en este horario.</p>
+                    {% endif %}
+
+                    <button type="button" class="btn-booking" style="margin-top:12px;"
+                            onclick="abrirReserva('{{ clase.id }}', '{{ clase.tipo }} — {{ coach.nombre }}', '{{ clase.dia }} {{ clase.hora_inicio }}')">
+                        + Agregar alumna manualmente
+                    </button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </section>
+        {% endfor %}
+
+    </main>
+
+    <div id="modalReserva" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cerrarReserva()">✕</button>
+            <h3 class="modal-title">Reservar clase</h3>
+            <p class="modal-subtitle" id="modalClaseInfo"></p>
+            <form action="/reservar" method="POST">
+                <input type="hidden" name="id_clase" id="input_id_clase">
+                <label style="display:block;margin-bottom:8px;font-size:0.8rem;font-weight:600;">Alumna</label>
+                <select name="id_alumna" class="form-select-modal" required>
+                    <option value="" disabled selected>Elegir...</option>
+                    {% for alumna in alumnas %}
+                    <option value="{{ alumna[0] }}">{{ alumna[1] }} ({{ alumna[3] }})</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">Confirmar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function abrirReserva(id, info, horario) {
+            document.getElementById('input_id_clase').value = id;
+            document.getElementById('modalClaseInfo').innerHTML = '<strong>' + info + '</strong><br>' + horario;
+            document.getElementById('modalReserva').classList.add('active');
+        }
+        function cerrarReserva() {
+            document.getElementById('modalReserva').classList.remove('active');
+        }
+        window.onclick = function(e) {
+            if (e.target.id === 'modalReserva') cerrarReserva();
+        };
+    </script>
+</body>
+</html>
